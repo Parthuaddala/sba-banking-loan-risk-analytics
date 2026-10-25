@@ -1,0 +1,11 @@
+# SBA 7(a) Loan Risk & Portfolio Analytics
+# Verified environment: Python 3.12.8
+# Exact versions from the successfully reproduced model environment.
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.5.1
+scipy==1.13.1
+joblib==1.4.2
+matplotlib==3.9.2
+openpyxl==3.1.5
+ipykernel==6.28.0

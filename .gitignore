@@ -1,0 +1,32 @@
+
+# SBA 7(a) datasets — keep large loan-level files local
+/data/raw/*
+!/data/raw/README.md
+
+/data/exports/*
+!/data/exports/README.md
+
+/data/processed/*
+!/data/processed/README.md
+
+# Python and Jupyter
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# macOS and editor temporary files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+~$*.xlsx
+*.log

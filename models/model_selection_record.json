@@ -1,0 +1,19 @@
+{
+    "selected_model": "Logistic Regression",
+    "selected_artifact": "logistic_regression_13_features.joblib",
+    "predictor_count": 13,
+    "regularization_C": 1.0,
+    "probability_calibration": "Uncalibrated",
+    "training_period": "FY2010-2015",
+    "tuning_period": "FY2016",
+    "calibration_period": "FY2017",
+    "validation_period": "FY2018",
+    "test_period": "FY2019",
+    "review_capacity": 0.1,
+    "challenger_selected": false,
+    "selection_reason": "Gradient Boosting failed the predefined FY2018 Average Precision and Recall@10% improvement thresholds.",
+    "calibration_note": "FY2017 sigmoid calibration worsened Logistic Regression Brier score on FY2018. Uncalibrated probabilities retained; this choice was informed by FY2018 validation.",
+    "feature_provenance_status": "Provisional",
+    "test_evaluated": false,
+    "record_created_utc": "2026-10-21T22:57:49.694046+00:00"
+}
