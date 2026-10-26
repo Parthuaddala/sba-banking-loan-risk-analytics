@@ -1,395 +1,167 @@
 # 🏦 SBA 7(a) Banking Loan Risk & Portfolio Analytics
 
-**PostgreSQL · Python · scikit-learn · Excel · Retrospective credit-risk ranking**
+**PostgreSQL · Python · scikit-learn · Excel | Historical portfolio analysis and risk ranking**
 
-**A documented portfolio-analysis case study with historical risk ranking, careful model comparison, and a completed Excel decision-support simulator.**
+I built an end-to-end portfolio analytics project using U.S. Small Business Administration (SBA) 7(a) loan records. I explored which segments recorded higher five-year charge-off incidence, compared two risk-ranking models, and developed an interactive Excel simulator to explore historical review capacity and hypothetical review costs.
 
-| 📁 Modeling population | 🎯 FY2019 Recall@10% | 📈 FY2019 ROC-AUC | 🔍 Recorded events captured |
+| Modeling population | FY2019 holdout | Recall at top 10% | Precision lift vs. random |
 |---:|---:|---:|---:|
-| **478,953 loans** | **22.28%** | **0.7020** | **398 of 1,786** |
-
-**Explore:** [Overview](#-project-overview) · [SQL pipeline](#️-postgresql-pipeline-and-sql-work) · [Model selection](#️-model-selection-and-uncertainty) · [Holdout results](#-final-fy2019-holdout-frozen-model) · [Excel simulator](#-excel-risk-review-simulator) · [Repository / setup](#-repository-structure-and-reproducibility) · [Limitations](#️-limitations-and-responsible-use)
-
-### 🖼️ Excel simulator previews
-
-**Risk-review dashboard — FY2019, 10% review capacity**
-
-![Actual Excel risk-review simulator dashboard showing FY2019 loan-review KPIs and financial what-if inputs](assets/sba_dashboard.png)
-
-*At the selected 10% review capacity, 4,567 historical loans are reviewed and 398 recorded five-year charge-offs fall in this group. The financial what-if is illustrative, not demonstrated savings.*
-
-### 📈 Historical Capture Curve
-
-The chart compares the share of historical charge-offs captured by model-ranked reviews against random selection. The green marker shows the selected review capacity.
-
-![Model vs Random Review Capture Curve](assets/capture_curve.png)
-
-
-**Risk deciles — FY2018 validation versus FY2019 holdout**
-
-![Actual Excel Risk Deciles worksheet comparing observed event rates and mean model scores for FY2018 and FY2019](assets/sba_risk_deciles.png)
-
-*Decile 1 is the highest-scored 10% of each fiscal-year cohort. The workbook displays historical observed event rates alongside uncalibrated model scores.*
+| **478,953 loans** | **45,670 loans** | **22.28%** | **2.23×** |
 
 ## 📊 Project overview
 
-This project analyzes U.S. Small Business Administration (SBA) 7(a) FOIA loan-level records approved in **FY2010–FY2019**, using a **June 30, 2026** data snapshot. It combines SQL-based ingestion and analytical views with Python validation, leakage investigation, chronological model comparison, and a frozen FY2019 holdout evaluation.
+**Business question:** Given limited review resources, can a historical loan-risk ranking identify a larger share of recorded charge-offs than reviewing loans at random? Which portfolio segments warrant closer analytical attention?
 
-**Business question:** If a lender can review the highest-scored **10%** of historical loans, how much of the recorded five-year charge-off incidence would that group capture?
+The dataset covers **FY2010–FY2019 approvals** in the SBA 7(a) FOIA release **as of June 30, 2026**. From 545,751 raw rows, I constructed a 478,953-row modeling population under a defined status and event-timing rule. I used a chronological split and selected a 13-predictor Logistic Regression after testing a Histogram Gradient Boosting challenger and investigating potential target leakage.
 
-**Primary finding:** A 13-predictor, L2-regularized Logistic Regression captured **398 of 1,786** recorded FY2019 five-year charge-offs (**22.28% recall**) among **4,567 of 45,670 loans** (10% review capacity). Its **ROC-AUC was 0.7020** and **Average Precision was 0.0774** (1.98× cohort prevalence). However, its probability estimates **overpredicted** observed charge-off incidence, so this is a **retrospective risk-ranking exercise**, not a validated loan-approval or loss-forecasting system.
+## 🔎 Key findings
 
-> **Scope warning:** The modeling population is selected using retrospectively observed loan statuses. Some field provenance remains unverified and five-year outcome labels from later vintages would not all have been observable when a truly historical model would have needed to be trained. Results do **not** establish real-world underwriting performance or that a review would prevent charge-offs.
+**1. Risk ranking concentrates historical events, but the gain is modest.** Among 45,670 FY2019 loans, reviewing the 4,567 highest-scored loans (10%) would encompass **398 of 1,786 recorded five-year charge-offs (22.28%)**. That represents **2.23×** the event concentration expected from a random 10% sample. ROC-AUC was **0.7020**, and Average Precision was **0.0774**. The model's average predicted risk was **6.11%** against **3.91% observed**, so its scores are more useful as *relative rankings* than as trustworthy individual probabilities.
 
-## 🛠️ Technology and workflow
+**2. Portfolio segments have sharply different observed event rates.** Across the retrospectively selected modeling population, loans **under $25,000** had a **6.313%** five-year charge-off rate versus **0.609%** for loans **$2 million and above**. Loans with an **85% SBA guarantee** had **7.733%** observed incidence versus **2.222%** for those with a **75% guarantee**. The 85% group had a **$100,000 median approval**, compared with **$510,000** in the 75% group. These comparisons are descriptive, and loan size, program mix, vintage, and guarantee terms may confound them; they do **not** imply that changing a guarantee percentage changes default risk.
 
-| Layer | Tools | Work performed |
-|---|---|---|
-| Data preparation | PostgreSQL, `psql`, pgAdmin | Import SBA CSV, standardize fields, build outcome/modeling views, audit statuses and dates |
-| Analysis | SQL and Python (pandas, NumPy) | Cohort summaries, duplicate/missing-value investigations, feature-integrity checks |
-| Modeling | scikit-learn | Logistic Regression baseline, Histogram Gradient Boosting challenger, sigmoid calibration |
-| Validation | Python | Chronological splits, Average Precision, Recall@10%, Brier score, deciles, bootstrap comparisons |
-| Reporting | Markdown and CSV | Methodology, frozen decision record, validation exports and exploratory diagnostics |
-| Decision support | Excel | Completed FY2018/FY2019 risk-review simulator, capacity comparison, deciles, historical-dollar capture, and hypothetical review economics |
+**3. Recorded incidence varies by approval vintage.** Five-year event incidence ranged from **3.07% (FY2013)** to **4.90% (FY2010)** across the constructed modeling population. Vintage comparisons require caution because status selection and outcome maturity affect which loans can be observed.
 
-## 🗃️ Dataset and population
+**4. A suspiciously strong predictor changed the modeling approach.** Early models using reported loan term achieved unusually strong discrimination, and nonstandard terms showed abnormal event patterns. Because term values might reflect post-approval changes, I excluded both term-related predictors before the final comparison. **Leakage was suspected, not conclusively proven**; the underlying field-history mechanism has not been established.
 
-| Item | Count |
-|---|---:|
-| Original SBA FOIA data | **545,751 loans**, 42 source columns |
-| Eligible modeling population | **478,953** |
-| Recorded charge-offs within five calendar years | **18,826** |
-| Target = 0 | **460,127** |
-| Five-year event incidence | **3.9307%** |
-| Unique modeling record IDs | **478,953** |
-| Duplicate `loan_row_id` in modeling export | **0** |
+### Portfolio segmentation — all FY2010–FY2019 eligible loans
 
-**Eligibility:** Normalize source `LoanStatus = 'P I F'` to `PIF`; retain `PIF`, `EXEMPT`, and `CHGOFF`; exclude `CANCLD` and `COMMIT`. Exclude **10 CHGOFF records missing `ChargeOffDate`** because their event timing cannot be determined. `EXEMPT` indicates active/exempt status in the source, not proven five-year survival. The population is not the universe of loan applicants or even an unbiased sample of all approved loans.
+I used PostgreSQL to compare processing methods, industry sectors and project states across **all 478,953 eligible loans** (18,826 recorded events). My analysis reports each segment’s event incidence, share of total loans, share of total recorded charge-offs, and early (**FY2010–2014**) versus late (**FY2015–2019**) event rates. The results describe a retrospective status-selected population, not prospective credit risk.
 
-### Exact target definition
+**Selection rule:** Each summary below shows the **five largest categories by loan count**, plus the highest and lowest *observed* rates among categories with **at least 5,000 loans and 100 recorded events**. Categories may appear in both groups. The full CSVs contain **every category**, including small and unknown groups; no categories are removed from the denominators. Processing methods have 24 categories, so the full listing is in the linked CSV rather than a 24-row README table. Extremely high or low rates selected from many categories may overstate the underlying differences.
 
-`chargeoff_within_5yr = 1` when **all** of the following hold:
+**Processing method** — [all 24 categories](results/portfolio_processing_methods.csv)
 
-1. Normalized `loan_status = 'CHGOFF'`;
-2. `chargeoff_date >= approval_date`;
-3. `chargeoff_date <= approval_date + INTERVAL '5 years'` (**inclusive fifth calendar anniversary**);
-4. `chargeoff_date <= snapshot_date` (June 30, 2026).
+| Category | Loans | Events | Event rate | Share of loans | Share of events | FY10–14 | FY15–19 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| SBA Express Program | 230,232 | 9,641 | 4.19% | 48.07% | 51.21% | 3.71% | 4.56% |
+| Preferred Lenders Program | 153,392 | 4,660 | 3.04% | 32.03% | 24.75% | 2.01% | 3.64% |
+| 7a General *(lowest qualifying rate)* | 37,718 | 1,030 | 2.73% | 7.88% | 5.47% | 2.91% | 2.51% |
+| Small Loan Advantage Initiative | 27,648 | 1,396 | 5.05% | 5.77% | 7.42% | 4.79% | 5.22% |
+| Patriot Express Loans | 5,553 | 504 | 9.08% | 1.16% | 2.68% | 9.08% | N/A |
+| Community Express *(highest qualifying rate)* | 5,123 | 796 | 15.54% | 1.07% | 4.23% | 15.54% | N/A |
 
-All other *eligible* rows are assigned `0`. The SQL uses **calendar intervals**, not 1,825 fixed days. Nine records with post-snapshot charge-off dates were flagged for audit; none qualify as an event on their post-snapshot date.
+**NAICS industry sector** — [all 21 categories](results/portfolio_naics_sectors.csv)
 
-**Outcome reconciliation performed:**
+| Category | Loans | Events | Event rate | Share of loans | Share of events | FY10–14 | FY15–19 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Retail Trade | 65,659 | 2,962 | 4.51% | 13.71% | 15.73% | 4.67% | 4.37% |
+| Accommodation and Food Services | 62,648 | 2,622 | 4.19% | 13.08% | 13.93% | 4.37% | 4.05% |
+| Construction | 50,172 | 2,217 | 4.42% | 10.48% | 11.78% | 4.11% | 4.63% |
+| Professional, Scientific and Technical Services | 47,322 | 1,731 | 3.66% | 9.88% | 9.19% | 3.22% | 4.04% |
+| Health Care and Social Assistance | 44,706 | 1,023 | 2.29% | 9.33% | 5.43% | 2.05% | 2.50% |
+| Transportation and Warehousing *(highest qualifying rate)* | 25,286 | 1,423 | 5.63% | 5.28% | 7.56% | 4.44% | 6.28% |
+| Agriculture, Forestry, Fishing and Hunting *(lowest qualifying rate)* | 7,815 | 138 | 1.77% | 1.63% | 0.73% | 2.08% | 1.48% |
 
-| Window definition | Five-year events |
-|---|---:|
-| Selected: inclusive fifth calendar anniversary | **18,826** |
-| Exclusive anniversary boundary | 18,813 |
-| Fixed 1,825 days | 18,810 |
+**Project state** — [all 57 categories](results/portfolio_project_states.csv)
 
-Exactly **13 events** fell on the fifth anniversary. An independent external review reported 478,963 rows and 18,821 events: the 10-row difference is explained by exclusion of missing charge-off dates; the remaining five-event discrepancy could not be attributed to the tested window conventions and is **unresolved** without its exact extraction logic and row identifiers. No data or models were changed to match it.
+| Category | Loans | Events | Event rate | Share of loans | Share of events | FY10–14 | FY15–19 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| California | 59,551 | 2,505 | 4.21% | 12.43% | 13.31% | 3.67% | 4.59% |
+| Texas | 36,932 | 1,956 | 5.30% | 7.71% | 10.39% | 4.49% | 5.92% |
+| New York | 30,838 | 1,229 | 3.99% | 6.44% | 6.53% | 3.34% | 4.46% |
+| Ohio | 26,443 | 940 | 3.55% | 5.52% | 4.99% | 3.64% | 3.48% |
+| Florida *(highest qualifying rate)* | 23,413 | 1,360 | 5.81% | 4.89% | 7.22% | 5.05% | 6.21% |
+| Washington *(lowest qualifying rate)* | 12,754 | 315 | 2.47% | 2.66% | 1.67% | 2.80% | 2.21% |
 
-## 🐘 PostgreSQL pipeline and SQL work
+The full population and both time bands reconcile independently for **each** dimension: **478,953 loans, 18,826 events; 210,806 early loans and 268,147 late loans**. NAICS groups use the existing SQL sector mapping, including Retail (44–45), Manufacturing (31–33), and Transportation/Warehousing (48–49). Some methods have no loans in one period; those rates are **N/A**, not zero. Processing method, loan size, vintage, sector and geography are intertwined, so neither observed rates nor the selected Logistic Regression coefficients establish causation.
 
-The SQL phase is a substantive component of this project, not just a CSV export. We used the `raw` and `analytics` schemas and built an auditable progression from source records to the modeling export.
+**Reproducible analysis:** [SQL segment view and validation](sql/05_portfolio_segment_analysis.sql) · [psql export commands](sql/06_export_portfolio_segments_psql.sql) · [SQL execution notes](sql/README_SQL.md). The SQL uses `GROUP BY`, conditional aggregation, `UNION ALL`, and window functions to compute and validate the reports.
 
-### 1. Raw import and quality validation
+### Charge-off incidence by approval vintage
 
-- Created a PostgreSQL database and `raw.sba_loans`, with **42 source fields** plus the persistent `loan_row_id` used to trace original rows.
-- Loaded **545,751** SBA 7(a) rows with `psql`'s `\copy` workflow.
-- Validated row counts, fiscal-year coverage, status distributions, relevant dates, duplicate occurrences, missing values, and abnormal terms.
-- Found **1,136 exact source-row repeat occurrences** in the raw data. The modeling export retained a unique `loan_row_id` per row; that does **not** imply the underlying source contained no repeated loan information.
-- Investigated missing/invalid charge-off and disbursement dates, date inconsistencies and post-snapshot charge-off records rather than silently dropping anomalies.
+![Bar chart of five-year charge-off incidence across SBA approval fiscal years 2010 through 2019](assets/vintage_chargeoff_rates.png)
 
-### Importing the raw CSV
+I calculated the fiscal-year loan counts and five-year charge-off rates using PostgreSQL, then built this visualization in Excel. The source data, formulas, and editable chart are available in the [SBA Vintage Analysis workbook](excel/SBA_Vintage_Analysis.xlsx).
 
-Use the PostgreSQL `psql` client (not pgAdmin's plain SQL Query Tool) for `\copy`. The 42 source column names, in import order, are listed in `sql/01_raw_database_setup.sql`. The `loan_row_id` field is generated automatically and **must not** be included in the imported column list. Do not use bare `\copy raw.sba_loans FROM ...` with all fields because the raw table has a generated identity column. Execute the original verified 42-column import command locally, substituting your own CSV path. Never publish personal absolute paths or the raw borrower-level data. Verify **545,751** rows after import.
+*Source: FY2010–FY2019 loan counts and charge-offs from the 478,953-row modeling population. These are retrospective observed-label rates, not forward-looking default forecasts.*
 
-### 2. Clean analytical view — `analytics.vw_sba_loans_clean`
+## 💡 Recommendation and business use
 
-The retained PostgreSQL view definition was inspected directly. Its transformations include:
+The simulator is best used to **demonstrate how a lender might prioritize an enhanced-review queue for further evaluation**, not to deploy automated underwriting decisions. Before any live pilot, confirm approval-time feature provenance, build a historically realistic outcome population, address calibration and changes in interest-rate distributions, and evaluate operational feasibility. A prospective randomized comparison against a suitable control group would be needed to estimate whether reviewing loans actually prevents losses.
 
-- Normalize `P I F` to `PIF`, trim other status text, cast date and numeric source fields.
-- Compute `guarantee_pct = ROUND(100 * SBAGuaranteedApproval / NULLIF(GrossApproval, 0), 2)` and `unguaranteed_approval = GrossApproval - SBAGuaranteedApproval`.
-- Map detailed `BusinessAge` source labels into common business-age groups; assign `Unknown` or `Unmapped` explicitly where appropriate.
-- Group terms into duration categories (including invalid/zero terms) for **exploration only**.
-- Derive NAICS sector using the first two digits of `NaicsCode` and sector mapping; standardize project state.
-- Construct a lender identifier using FDIC number when available, otherwise NCUA number, otherwise normalized lender name, otherwise a row-specific unknown fallback. Flag records containing both FDIC and NCUA identifiers.
+**Illustrative economics—not observed savings or projected ROI.** At FY2019's 10% review capacity, the model identifies 4,567 loans and **$15,416,819 in historical gross charge-off amounts** among the selected group. Holding that historical amount constant yields these *purely hypothetical* break-even percentages:
 
-These are **descriptions of the existing view**, not instructions to execute a replacement view definition.
+| Assumed cost per review | Cost for 4,567 reviews | Review cost ÷ historical gross charge-offs |
+|---|---:|---:|
+| $100 | $456,700 | **2.96%** |
+| $500 | $2,283,500 | **14.81%** |
+| $1,000 | $4,567,000 | **29.62%** |
 
-### 3. Five-year outcome view — `analytics.vw_sba_5yr_risk_population`
+The last column is a **hypothetical share of historical gross charge-off dollars that would have to be avoided to offset review cost**, *not* an empirically supported prevention probability. **Gross charge-off amounts do not distinguish the lender's loss from SBA's share and do not incorporate recoveries or net economic exposure.** Real review costs, intervention effects, payment timing, and preventability are unmeasured; therefore, these ratios cannot establish whether a review program is financially worthwhile.
 
-The outcome view joins the cleaned records to raw records on `loan_row_id`, retains eligible statuses, excludes charged-off records without a charge-off date, and derives:
+## 📗 Interactive Excel simulator
 
-- `chargeoff_date` and `snapshot_date`;
-- `five_year_anniversary = (approval_date + INTERVAL '5 years')::date`;
-- `chargeoff_within_5yr` under the four rules above;
-- `post_snapshot_event_flag` for events after the dataset snapshot.
+**[Open the Excel risk-review simulator](excel/SBA_Risk_Review_Simulator.xlsx)** — a native Excel-for-Mac-compatible workbook with Dashboard, Capacity Analysis, Risk Deciles, Loan Data, and Methodology sheets. Select **FY2018 or FY2019** and **5%, 10%, 15%, 20%, or 25%** review capacity to compare historical event capture with a random-review baseline. The financial panel allows hypothetical review-cost and prevention-rate assumptions.
 
-For example, the core **event-condition pattern** is:
+![Excel dashboard with FY2019 loan-review results](assets/sba_dashboard.png)
 
-```sql
-CASE
-    WHEN loan_status = 'CHGOFF'
-     AND chargeoff_date >= approval_date
-     AND chargeoff_date <= (approval_date + INTERVAL '5 years')::date
-     AND chargeoff_date <= snapshot_date
-    THEN 1 ELSE 0
-END AS chargeoff_within_5yr
-```
+*FY2019, 10% review capacity: 4,567 historical loans selected, 398 recorded events captured.*
 
-*Illustrative fragment only; see the actual saved SQL scripts or database view definition for executable SQL and its joins/casts.*
+![Capture curve comparing model ranking against random loan review](assets/capture_curve.png)
 
-### 4. Modeling views and data export
+![Risk deciles comparing FY2018 and FY2019](assets/sba_risk_deciles.png)
 
-- `analytics.vw_sba_model_candidates`: prepares model candidate fields and flags for assessment.
-- `analytics.vw_sba_model_export`: supplies the final **25-column** dataset, including target, feature inputs, cohort labels, identifiers, and audit-only fields.
-- Exported `data/exports/sba_model_export.csv` containing **478,953 × 25** rows/columns.
-- Preserved the model-eligible population independently of post-holdout feature audits.
+The workbook contains **99,864 FY2018/FY2019 loan-level rows and 11 analytical columns**, without borrower-name or street-address fields. Its main indicators are linked to **precomputed** cohort/capacity summaries; editing the Loan Data sheet does **not** automatically recompute them. No live Power Query source connection is required in the published copy.
 
-**Reviewed SQL scripts (in execution order):**
+## 🧠 Modeling and validation
 
-1. `sql/00_create_schemas.sql` — create `raw` and `analytics` schemas.
-2. `sql/01_raw_database_setup.sql` — create the raw SBA table (42 source fields and generated `loan_row_id`).
-3. Import the original SBA CSV with `psql` `\copy` (see below).
-4. `sql/02_raw_data_validation.sql` — inspect raw counts, statuses, duplicate occurrences, missing values, amounts, and date anomalies.
-5. `sql/03_analytical_views.sql` — create the four dependent views in order: clean, five-year population, model candidates, and model export.
-6. `sql/04_exploratory_analysis.sql` — optional read-only portfolio/guarantee/NAICS analyses. This is the reviewed `Untitled.sql`, renamed because it belongs to this project.
+| Cohort | Purpose | Loans | Five-year events |
+|---|---|---:|---:|
+| FY2010–2015 | Train | 266,226 | 9,894 |
+| FY2016 | Tune | 56,785 | 2,198 |
+| FY2017 | Fit probability calibration | 56,078 | 2,419 |
+| FY2018 | Independent selection validation | 54,194 | 2,529 |
+| FY2019 | Final frozen holdout | 45,670 | 1,786 |
 
-The scripts were reviewed statically against the documented outputs; they have **not** been re-executed here against the local PostgreSQL database.
+| FY2018 uncalibrated model | Average Precision | ROC-AUC | Recall@10% | Events captured |
+|---|---:|---:|---:|---:|
+| **Logistic Regression (selected)** | **0.0941** | **0.7076** | 22.62% | 572 |
+| Histogram Gradient Boosting | 0.0924 | 0.7030 | 23.13% | 585 |
 
-### 5. Representative SQL concepts demonstrated
+Gradient Boosting did not meet my prespecified improvement requirements (**≥10% relative Average Precision** and **≥5 percentage points Recall@10%**, without materially worse calibration or stability). Paired bootstrap intervals for the improvement included zero, so I retained **uncalibrated Logistic Regression**, `C=1.0`, with **13 predictors**, before evaluating the final FY2019 cohort.
 
-`CREATE VIEW`, `CASE WHEN`, `NULLIF`, `TRIM`, numeric/date casts, `INTERVAL`, `LEFT()`/sector bucketing, derived columns, `JOIN`, conditional aggregation via `COUNT(*) FILTER (WHERE ...)`, `GROUP BY`, fiscal-year summaries, duplicate-row investigation, and auditing view definitions through PostgreSQL catalog metadata.
+**Final FY2019:** 398 events among 4,567 reviewed loans; **22.28% Recall@10%**, **8.71% Precision@10%**, **0.0774 Average Precision**, **0.7020 ROC-AUC**. Brier score was **0.037618**, slightly worse than the constant training-prevalence baseline (**0.037581**). Observed incidence was **3.9107%** versus **6.1107%** mean predicted risk. This is a risk-ranking demonstration, **not a validated probability, pricing, or underwriting tool**.
 
-**SQL validation checkpoints:**
+I documented the outcome-definition reconciliation and the feature/audit analysis in [technical methods and reproducibility](docs/SBA_technical_methods_and_reproducibility.md), with further evaluation details in [model evaluation summary](docs/model_evaluation_summary.md).
 
-```sql
--- Final risk-population counts (read-only)
-SELECT
-    COUNT(*) AS loans,
-    COUNT(*) FILTER (WHERE chargeoff_within_5yr = 1) AS events,
-    COUNT(*) FILTER (WHERE chargeoff_within_5yr = 0) AS non_events,
-    COUNT(*) FILTER (WHERE post_snapshot_event_flag = 1) AS post_snapshot_flags
-FROM analytics.vw_sba_5yr_risk_population;
--- Observed: 478953, 18826, 460127, 9
-```
+## 🛠️ Technology and what I built
 
-```sql
--- Confirm fiscal-year event counts
-SELECT approval_fy,
-       COUNT(*) AS loans,
-       SUM(chargeoff_within_5yr) AS events
-FROM analytics.vw_sba_5yr_risk_population
-GROUP BY approval_fy
-ORDER BY approval_fy;
-```
-
-**Reproducibility caution:** `\copy` is a `psql` client command, not plain SQL executable in every pgAdmin query editor. Avoid committing personal absolute file paths; use documented configurable import locations.
-
-## 🧠 Chronological model design
-
-| Cohort | Role | Loans | Events | Incidence |
-|---|---|---:|---:|---:|
-| FY2010–2015 | Train | 266,226 | 9,894 | 3.7164% |
-| FY2016 | Tune | 56,785 | 2,198 | 3.8707% |
-| FY2017 | Fit probability calibrators | 56,078 | 2,419 | 4.3136% |
-| FY2018 | Validate and freeze selection | 54,194 | 2,529 | 4.6666% |
-| FY2019 | Final holdout | 45,670 | 1,786 | 3.9107% |
-
-No later cohort was used to refit the selected Logistic Regression for the primary final evaluation. **Important historical realism limitation:** Training on FY2010–2015 labels to backtest FY2019 does not mimic what labels were fully matured by the start of FY2019.
-
-### Final 13 predictors
-
-**Numeric (4):** `gross_approval`, `guarantee_pct`, `initial_interest_rate_model`, `jobs_supported`.
-
-**Categorical (8):** `business_age_group`, `naics_sector`, `project_state`, `processing_method`, `collateral_indicator`, `revolver_status`, `interest_rate_type`, `business_type`.
-
-**Flag (1):** `invalid_interest_rate_flag`.
-
-The model excludes `term_months_model` and `invalid_term_flag` following leakage diagnostics. The remaining fields are **provisional** pending verification that each field's value reflects the time of approval. Previously unseen business-age labels appeared in later cohorts, creating an additional generalization concern.
-
-### Baseline and challenger
-
-- **Logistic Regression:** median numeric imputation, scaling, one-hot encoding for categorical inputs, L2 regularization, `C=1.0`, `class_weight=None`, intercept enabled. Saved as `models/logistic_regression_13_features.joblib`.
-- **Histogram Gradient Boosting:** nonlinear challenger with the same 13 candidate predictors; saved as `models/gradient_boosting_13_features.joblib`. Its categorical training-vocabulary conversion was implemented outside the saved estimator, so reproducing that challenger requires the associated notebook processing as well.
-- **Sigmoid calibration:** fitted on FY2017; FY2018 diagnostics did not justify using calibrated Logistic Regression probabilities as the final artifact.
-
-The prespecified challenger rule required **at least 10% relative improvement in Average Precision** **and** **at least +5 percentage points Recall@10%**, without materially worse calibration or stability. It did **not** satisfy these conditions on FY2018. The selected final artifact was the **uncalibrated Logistic Regression**; its calibration choice was informed by FY2018 and should not be treated as a separate untouched comparison.
-
-### Leakage investigation: reported loan term
-
-An early Gradient Boosting model with reported term achieved implausibly strong results. Permutation analysis identified term as overwhelmingly influential. Unusual, nonstandard loan terms had exceptionally elevated event incidence, raising concern that reported terms might incorporate post-approval servicing or modification information. The mechanism was **not proven**. Both term-related predictors were excluded from the primary comparison before final selection.
-
-This is a central methodological finding: suspiciously good validation scores require investigating source-field semantics and timing, rather than automatically celebrating model performance.
-
-## ⚖️ Model selection and uncertainty
-
-**Independent FY2018 results (uncalibrated predictions):**
-
-| Model | Average Precision | ROC-AUC | Recall@10% | Charge-offs captured | Brier |
-|---|---:|---:|---:|---:|---:|
-| Logistic Regression | **0.0941** | **0.7076** | 22.62% | 572 | 0.043512 |
-| Gradient Boosting | 0.0924 | 0.7030 | **23.13%** | 585 | 0.043528 |
-
-On 500 paired, loan-level bootstrap resamples, the **GB minus LR** difference had intervals:
-
-- Average Precision: mean **−0.00205**, percentile 95% interval **[−0.00761, +0.00348]**.
-- Recall@10%: mean **+0.45 pp**, percentile 95% interval **[−1.30, +2.25] pp**.
-
-Both intervals include zero. This bootstrap does not account for loans clustered by lender and is not a lender-clustered confidence interval.
-
-A frozen model-selection record is saved in `models/model_selection_record.json`.
-
-## 📈 Final FY2019 holdout (frozen model)
-
-| Metric | Result |
-|---|---:|
-| Loans / recorded events | 45,670 / 1,786 |
-| Observed event incidence | 3.9107% |
-| Average Precision (PR summary) | **0.0774** |
-| Average Precision lift vs. prevalence | **1.98×** |
-| ROC-AUC | **0.7020** |
-| Review capacity | **Top 10% = 4,567 loans** |
-| Recorded events in reviewed group | **398** |
-| Recall@10% | **22.28%** |
-| Precision@10% | **8.71%** |
-| Precision lift vs. prevalence | **2.23×** |
-| Mean predicted event probability | **6.1107%** |
-| Brier score | **0.037618** |
-| Brier reference: constant training prevalence | **0.037581** |
-| Brier Skill Score | **−0.0984%** |
-
-At a fixed 10% review capacity, the model concentrates ~22% of observed events in its top-ranked loans—approximately **2.23 times** the expected capture under random selection. These are *historical event counts*, **not** estimates of preventable losses or economic returns.
-
-### Calibration limitation
-
-FY2019 observed incidence was **3.9107%**, below the average predicted probability of **6.1107%** (a **+2.200 percentage-point** overprediction gap). All ten FY2019 score deciles overpredicted. In the highest-risk decile, the average prediction was **15.381%**, versus observed incidence of **8.715%** (gap **−6.667 pp**, using observed minus predicted). The Brier Skill Score is slightly negative relative to a fixed training-incidence benchmark. **Do not interpret raw model probabilities as trusted individual default probabilities.**
-
-## 📗 Excel risk-review simulator
-
-- **Dashboard:** Select FY2018 or FY2019 and a review capacity of **5%, 10%, 15%, 20%, or 25%**; compare historically observed charge-off capture against a random-review baseline, including the selected capacity marker on the chart.
-- **Capacity Analysis:** Precomputed cohort/capacity summaries supply counts reviewed, recorded charge-offs captured, recall, precision, lift, and historically recorded charge-off dollars in the selected group.
-- **Risk Deciles:** Compare observed event incidence and mean model score across ten score-ranked groups for each fiscal-year cohort.
-- **Loan Data:** Contains **99,864 historical FY2018/FY2019 loan records** with 11 exported fields, sourced from `data/exports/sba_simulator_expanded.csv`.
-- **Methodology:** Explains inputs, assumptions, metrics, and limitations.
-
-At **FY2019 / 10%** capacity the workbook reports **4,567 reviewed loans**, **398 captured historical charge-offs**, **22.28% recall**, **8.71% precision**, and **2.23× precision lift**. These tie to the final evaluation.
-
-**How the workbook updates:** Dashboard metrics use `INDEX/MATCH` to read the **precomputed Capacity Analysis table**, rather than recalculating model rankings and metrics from the full Loan Data sheet. Changing the fiscal-year/capacity selectors updates displayed summaries; manually changing Loan Data **does not automatically rebuild** those precomputed values. To refresh source data or scores, regenerate the exports and summary tables with the documented Python workflow. The financial what-if uses user-entered **cost per review** and an **assumed prevention rate**; outputs are scenarios, not observed prevention or established ROI. Historical gross charge-off amounts are descriptive and should not be interpreted as recoverable savings.
-
-## 🔎 Exploratory post-holdout feature and drift audit
-
-After the final test, further **diagnostics** were performed without retraining or reselecting the model. They are explanatory audits, **not** fresh independent validation.
-
-| Retained feature | Audit finding |
+| Component | Implementation |
 |---|---|
-| `gross_approval` | Loans under $25K: 6.313% incidence; loans $2M+: 0.609%. Loan size and portfolio mix likely confound this comparison. |
-| `guarantee_pct` | 85% guarantee: 57,213 loans / 7.733% incidence; 75% guarantee: 161,081 / 2.222%. The 85% group is much smaller by median approved amount ($100K vs. $510K), and its elevated observed rate persists across approval fiscal years. |
-| `initial_interest_rate_model` | At least 11%: 5,622 loans / 9.374% incidence. High rates are overwhelmingly concentrated in FY2018–2019; interest-rate distribution shifted over time. |
-| `jobs_supported` | More supported jobs generally coincide with larger loans and lower incidence; 501+ group contains just six loans, unsuitable for strong inference. |
-| `invalid_interest_rate_flag` | Seven missing modeled rates; all seven flagged correctly, no mismatches. |
+| SQL analysis | PostgreSQL, pgAdmin, `psql`; `raw` and `analytics` schemas, quality checks, four modeling views, a portfolio-segmentation view, cohort summaries |
+| Python | pandas, NumPy, scikit-learn; preprocessing, Logistic Regression, Histogram Gradient Boosting, calibration and bootstrap analysis |
+| Decision support | Excel (Mac-compatible); capacity analysis, historical event/dollar capture, deciles and what-if assumptions |
+| Documentation | SQL scripts, eight numbered notebooks, saved model and selection record, supporting `docs/` and complete portfolio-segment CSVs |
 
-**Training interest-rate range:** 0.660%–11.520%; FY2019 had 2,228 loans (**4.878%**) above that maximum. FY2019 median interest rate was 7.75%, compared with the FY2010–2015 training median of 6.00%. These are evidence of shifting inputs, **not** proof of leakage or causation.
+## 🗃️ Data source and licensing
 
-### Mean predicted risk versus observed incidence by cohort
+- **Source:** [U.S. SBA — 7(a) & 504 FOIA dataset](https://data.sba.gov/dataset/7a-504-foia). Select the **7(a), FY2010–FY2019, June 30, 2026** CSV to reproduce this project, along with the **7(a) and 504 FOIA data dictionary** on the same page. The SBA periodically updates its dataset; a different snapshot may produce different results.
+- **Dataset terms:** The SBA catalog identifies the data as **U.S. Government Works**. The data belongs to its original source, not to this repository. The large source CSV and derived model-level exports are intentionally excluded from GitHub.
+- **Project code:** The included [MIT License](LICENSE) applies to my original code and documentation. It does not change the SBA source dataset’s separate terms.
 
-| Fiscal year | Observed | Predicted | Predicted − observed |
-|---|---:|---:|---:|
-| FY2016 | 3.871% | 3.648% | −0.222 pp |
-| FY2017 | 4.314% | 3.741% | −0.573 pp |
-| FY2018 | 4.667% | 5.153% | +0.486 pp |
-| FY2019 | 3.911% | 6.111% | **+2.200 pp** |
+## 🔁 Reproduce the pipeline
 
-The model was built **without class weighting** (`class_weight=None`); the frozen FY2019 Average Precision, ROC-AUC, mean prediction, and Brier score were reproduced in a compatible **scikit-learn 1.5.1** environment.
+1. Clone the repository, install **Python 3.12.8** and the pinned dependencies in `requirements.txt` (including **scikit-learn 1.5.1**).
+2. Obtain the SBA FY2010–FY2019 CSV snapshot and place it under `data/raw/`. In PostgreSQL, run `sql/00_create_schemas.sql` and `sql/01_raw_database_setup.sql`.
+3. In the **`psql` terminal**, run the exact **42-column `\copy` template** in [technical import instructions](docs/SBA_technical_methods_and_reproducibility.md#-postgresql-pipeline-and-sql-work), substituting your own CSV path. The import should produce **545,751 rows**. Run `sql/02_raw_data_validation.sql` and `sql/03_analytical_views.sql`.
+4. Export `analytics.vw_sba_model_export` to `data/exports/sba_model_export.csv` (expected **478,953 rows × 25 fields**) and run notebooks **01–07** in order. `00_sba_feasibility.ipynb` is optional preliminary exploration. Details and SQL checkpoints are in [technical methods](docs/SBA_technical_methods_and_reproducibility.md).
+5. For descriptive portfolio analysis, run `sql/05_portfolio_segment_analysis.sql` in pgAdmin, then regenerate the three published aggregated CSVs with `sql/06_export_portfolio_segments_psql.sql` in `psql` from the repository root (see [SQL execution notes](sql/README_SQL.md)).
+6. Verify FY2019 results against the repository's `results/` and `models/model_selection_record.json`. Keep the original published model and result files backed up before rerunning notebooks that overwrite artifacts.
 
-### Interest-rate substitution sensitivity (not a proposed recalibration)
-
-Holding each later cohort's interest-rate input to the **6.00% training median** while leaving the other inputs unchanged gives:
-
-| FY | Original predicted mean | Rate-fixed predicted mean | Original − rate-fixed |
-|---|---:|---:|---:|
-| 2016 | 3.648% | 3.087% | 0.561 pp |
-| 2017 | 3.741% | 2.912% | 0.829 pp |
-| 2018 | 5.153% | 3.467% | 1.686 pp |
-| 2019 | 6.111% | 3.612% | **2.499 pp** |
-
-This demonstrates the **fitted model's sensitivity** to the rate feature. It does **not** causally decompose the calibration gap, and the manipulated inputs can represent unrealistic combinations of features. The FY2019 evaluation remains unchanged.
-
-## 📂 Repository structure and reproducibility
-
-The following is the **intended published structure** after the final `.gitignore` audit. Large raw and modeling exports remain local and are **not** expected in the GitHub checkout.
-
-```text
-.
-├── README.md
-├── requirements.txt
-├── .gitignore
-├── assets/                             # Actual Excel simulator screenshots
-│   ├── sba_dashboard.png
-│   ├── capture_curve.png
-│   └── sba_risk_deciles.png
-├── sql/
-│   ├── 00_create_schemas.sql
-│   ├── 01_raw_database_setup.sql
-│   ├── 02_raw_data_validation.sql
-│   ├── 03_analytical_views.sql
-│   ├── 04_exploratory_analysis.sql
-│   └── README_SQL.md
-├── notebooks/
-│   ├── 00_sba_feasibility.ipynb
-│   ├── 01_model_data_validation.ipynb
-│   ├── 02_logistic_regression_baseline.ipynb
-│   ├── 03_gradient_boosting_challenger.ipynb
-│   ├── 04_probability_calibration.ipynb
-│   ├── 05_independent_validation.ipynb
-│   ├── 06_final_holdout_evaluation.ipynb
-│   └── 07_feature_integrity_audit.ipynb
-├── models/
-│   ├── logistic_regression_13_features.joblib
-│   ├── gradient_boosting_13_features.joblib
-│   └── model_selection_record.json
-├── results/
-│   ├── fy2019_final_model_metrics.csv
-│   ├── fy2019_calibration_deciles.csv
-│   ├── annual_calibration_drift.csv
-│   └── interest_rate_sensitivity.csv
-├── excel/
-│   └── SBA_Risk_Review_Simulator.xlsx
-└── docs/
-    └── model_evaluation_summary.md
-```
-
-Other retained model `.joblib` artifacts may be present locally; their inclusion depends on the final file-size and version audit. `data/raw/` and `data/exports/` hold local files, not files guaranteed to be present in the published repository. Dataset acquisition and local export instructions are described in this README.
-
-**Suggested reproduction order:**
-
-1. Use **Python 3.12.8** and install the pinned packages in `requirements.txt`, notably **scikit-learn 1.5.1**, NumPy 1.26.4, pandas 2.2.2, SciPy 1.13.1, joblib 1.4.2, matplotlib 3.9.2, openpyxl 3.1.5, and ipykernel 6.28.0.
-2. Obtain the original SBA FY2010–FY2019 7(a) FOIA source **as of June 30, 2026** and its 42-field dictionary. A newer snapshot may give different figures. Place the source CSV locally in `data/raw/` and read the SQL import guidance.
-3. Create PostgreSQL schemas and the raw table, import the 42-field CSV using **`psql` `\copy`**, then run the validation and analytical-view SQL scripts in `sql/` in the documented order.
-4. Export `analytics.vw_sba_model_export` as **`data/exports/sba_model_export.csv`** (expected 478,953 records and 25 columns). This ~107 MB file is omitted from GitHub. The notebooks use relative paths and expect the data to be present locally.
-5. Run the notebooks in numerical order **00–07** as appropriate. Notebook 00 is an exploratory feasibility check; notebooks 01–07 cover the modeling and evaluation pipeline. Rerunning notebooks that write artifacts can overwrite saved models/exports or refresh selection-record timestamps; back up published artifacts before full re-execution.
-6. Compare final FY2019 metrics against `results/` and the frozen decision record. Notebook 07 also produces FY2018/FY2019 simulator data and supporting summaries; the released Excel workbook is a **precomputed historical review tool**, not an automatically regenerating modeling interface.
-
-**Reproducibility limitations:** The published repository omits the 255 MB raw CSV and ~107 MB model export; the `psql` import remains a manual step. The reviewed SQL and notebook scripts have **not** been independently executed end to end on a fresh machine, so this is not a one-command reproduction. A local Python/Excel validation and saved-output audit were performed, but do not substitute for a clean-environment integration test. Do not publish personal absolute file paths or unnecessary borrower-identifying fields.
+**Reproducibility:** I reran the SQL and Python pipeline using a fresh clone, separate PostgreSQL database, and isolated Python 3.12.8 environment, reproducing the final Logistic Regression results and FY2018 model-selection decision. Gradient Boosting showed small numerical differences, and the test does not prove byte-identical refitting of the saved final estimator; the published Excel file was also tested on Excel for Mac.
 
 ## ⚠️ Limitations and responsible use
 
-- **Selection bias:** Eligibility is conditioned on retrospectively observed statuses. Some `0` records are not verified five-year survivors.
-- **Timing and leakage:** Loan term was excluded due to leakage risk; approval-time provenance remains incomplete for some retained fields.
-- **Maturity / temporal realism:** Outcomes observed by a 2026 snapshot do not necessarily reflect labels available when a model for FY2019 would have been deployed.
-- **Outcome meaning:** Recorded charge-off within five calendar years is not the same as default, delinquency, loss severity, or preventable loss.
-- **Calibration:** FY2019 probabilities materially overpredict incidence; a risk-ranking demo should not price credit or predict dollar savings from these probabilities.
-- **Unseen categories / drift:** Historical cohorts differ in business-age categories and interest-rate distribution.
-- **Data anomalies:** Source duplicates, invalid term/rate values and post-snapshot event flags require transparent handling.
-- **Uncertainty:** Paired bootstrap samples individual loans, not lender clusters.
-- **No causal claim:** Associations and counterfactual feature substitutions are descriptive, not evidence of interventions that reduce losses.
+- **Retrospective status selection and immature outcomes:** Some loans labeled `0` are not verified five-year survivors; a historical deployment would not have had every label available at the time. This is not a causal or production-ready underwriting evaluation.
+- **Potential leakage:** Reported loan term was excluded, but approval-time provenance is not fully established for all retained inputs.
+- **Calibration and drift:** FY2019 probabilities overpredicted recorded incidence. Interest-rate distributions and category labels changed across cohorts.
+- **Operational claims:** Five-year recorded charge-offs are not the same as preventable losses. Neither this model nor the Excel what-if establishes savings from review.
+- **Uncertainty:** Reported bootstrap comparisons resample loans, not lender clusters.
 
-## ✅ Project status / next steps
-
-**Completed:** SQL ingest and analytical views; modeling export; validation; Logistic Regression baseline; Gradient Boosting challenger; term-leakage investigation; probability calibration; FY2018 selection; FY2019 frozen evaluation; feature-integrity and drift diagnostics; **five-sheet Excel risk-review simulator**; preliminary notebook and SQL documentation reviews; Python dependency verification.
-
-**Before GitHub publication:** (1) verify `.gitignore` and tracked-file size checks; (2) verify the exact raw-data acquisition/import instructions; (3) check that notebook links and relative paths still match the final layout; (4) optionally test the pipeline against a fresh PostgreSQL/Python installation. The project is not represented as fully reproduced end-to-end on a clean system.
+For exact target logic, event-boundary reconciliation, field definitions, interest-rate substitution sensitivity, and detailed SQL import instructions, see **[Technical methods and reproducibility](docs/SBA_technical_methods_and_reproducibility.md)**.
 
 ---
 
-*Methodology and metrics are based on the project SQL view definitions, model-evaluation summary, and recorded notebook outputs as reviewed through October 2026. The Excel workbook was separately validated on Excel for Mac. This is a research/portfolio demonstration, not an operational credit-decision tool.*
+**Created by Parthasarathi Addala**
+[GitHub: Parthuaddala](https://github.com/Parthuaddala)

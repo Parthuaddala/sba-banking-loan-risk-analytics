@@ -1,0 +1,25 @@
+dimension,category,loan_count,event_count,observed_rate_pct,loan_share_pct,event_share_pct,early_loans,early_events,early_rate_pct,late_loans,late_events,late_rate_pct,volume_rank,qualifies_for_rate_comparison
+Processing Method,SBA Express Program,230232,9641,4.19,48.07,51.21,101727,3778,3.71,128505,5863,4.56,1,t
+Processing Method,Preferred Lenders Program,153392,4660,3.04,32.03,24.75,56464,1135,2.01,96928,3525,3.64,2,t
+Processing Method,7a General,37718,1030,2.73,7.88,5.47,20539,598,2.91,17179,432,2.51,3,t
+Processing Method,Small Loan Advantage Initiative,27648,1396,5.05,5.77,7.42,11031,528,4.79,16617,868,5.22,4,t
+Processing Method,Patriot Express Loans,5553,504,9.08,1.16,2.68,5553,504,9.08,0,0,,5,t
+Processing Method,Community Express,5123,796,15.54,1.07,4.23,5123,796,15.54,0,0,,6,t
+Processing Method,Community Advantage Initiative,5023,375,7.47,1.05,1.99,783,51,6.51,4240,324,7.64,7,t
+Processing Method,Rural Loan Initiative,2746,128,4.66,0.57,0.68,2735,128,4.68,11,0,0.00,8,f
+Processing Method,Working Capital CAPLine,2735,39,1.43,0.57,0.21,1321,26,1.97,1414,13,0.92,9,f
+Processing Method,Certified Lenders Program,2433,43,1.77,0.51,0.23,1584,29,1.83,849,14,1.65,10,f
+Processing Method,Gulf Opportunity Pilot Loan Program,1516,90,5.94,0.32,0.48,1516,90,5.94,0,0,,11,f
+Processing Method,International Trade Loans,1305,21,1.61,0.27,0.11,373,11,2.95,932,10,1.07,12,f
+Processing Method,Export Express,1210,76,6.28,0.25,0.40,861,66,7.67,349,10,2.87,13,f
+Processing Method,7a with EWCP,844,13,1.54,0.18,0.07,444,8,1.80,400,5,1.25,14,f
+Processing Method,Preferred Lenders with EWCP,577,2,0.35,0.12,0.01,252,1,0.40,325,1,0.31,15,f
+Processing Method,Contract CAPLine,456,7,1.54,0.10,0.04,228,5,2.19,228,2,0.88,16,f
+Processing Method,Seasonal CAPLine,164,2,1.22,0.03,0.01,75,1,1.33,89,1,1.12,17,f
+Processing Method,Builders CAPLine,132,0,0.00,0.03,0.00,58,0,0.00,74,0,0.00,18,f
+Processing Method,Dealer Floor Plan Loans,97,1,1.03,0.02,0.01,97,1,1.03,0,0,,19,f
+Processing Method,Small Asset Base Line of Credit (CAPLine),34,1,2.94,0.01,0.01,34,1,2.94,0,0,,20,f
+Processing Method,Export Import Harmonization  (EXIM),8,0,0.00,0.00,0.00,8,0,0.00,0,0,,21,f
+Processing Method,Community Advantage International Trade,4,1,25.00,0.00,0.01,0,0,,4,1,25.00,22,f
+Processing Method,SBA Express Bridge Loan,2,0,0.00,0.00,0.00,0,0,,2,0,0.00,23,f
+Processing Method,Certified Lenders Program with EWCP,1,0,0.00,0.00,0.00,0,0,,1,0,0.00,24,f

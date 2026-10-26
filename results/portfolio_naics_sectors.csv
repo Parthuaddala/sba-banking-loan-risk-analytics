@@ -1,0 +1,22 @@
+dimension,category,loan_count,event_count,observed_rate_pct,loan_share_pct,event_share_pct,early_loans,early_events,early_rate_pct,late_loans,late_events,late_rate_pct,volume_rank,qualifies_for_rate_comparison
+NAICS Sector,Retail Trade,65659,2962,4.51,13.71,15.73,30733,1435,4.67,34926,1527,4.37,1,t
+NAICS Sector,Accommodation and Food Services,62648,2622,4.19,13.08,13.93,26227,1147,4.37,36421,1475,4.05,2,t
+NAICS Sector,Construction,50172,2217,4.42,10.48,11.78,20559,845,4.11,29613,1372,4.63,3,t
+NAICS Sector,"Professional, Scientific and Technical Services",47322,1731,3.66,9.88,9.19,21948,707,3.22,25374,1024,4.04,4,t
+NAICS Sector,Health Care and Social Assistance,44706,1023,2.29,9.33,5.43,21295,437,2.05,23411,586,2.50,5,t
+NAICS Sector,Other Services,42853,1720,4.01,8.95,9.14,18124,653,3.60,24729,1067,4.31,6,t
+NAICS Sector,Manufacturing,37961,1141,3.01,7.93,6.06,18625,563,3.02,19336,578,2.99,7,t
+NAICS Sector,Transportation and Warehousing,25286,1423,5.63,5.28,7.56,8964,398,4.44,16322,1025,6.28,8,t
+NAICS Sector,Wholesale Trade,25211,1194,4.74,5.26,6.34,12520,557,4.45,12691,637,5.02,9,t
+NAICS Sector,Administrative and Support Services,22159,931,4.20,4.63,4.95,9147,325,3.55,13012,606,4.66,10,t
+NAICS Sector,"Arts, Entertainment and Recreation",14045,667,4.75,2.93,3.54,4983,213,4.27,9062,454,5.01,11,t
+NAICS Sector,Real Estate and Rental and Leasing,10446,273,2.61,2.18,1.45,4346,92,2.12,6100,181,2.97,12,t
+NAICS Sector,Finance and Insurance,8161,201,2.46,1.70,1.07,3095,70,2.26,5066,131,2.59,13,t
+NAICS Sector,"Agriculture, Forestry, Fishing and Hunting",7815,138,1.77,1.63,0.73,3755,78,2.08,4060,60,1.48,14,t
+NAICS Sector,Educational Services,6684,300,4.49,1.40,1.59,2704,104,3.85,3980,196,4.92,15,t
+NAICS Sector,Information,5655,219,3.87,1.18,1.16,2760,101,3.66,2895,118,4.08,16,t
+NAICS Sector,"Mining, Quarrying, Oil and Gas",1373,43,3.13,0.29,0.23,705,21,2.98,668,22,3.29,17,f
+NAICS Sector,Utilities,402,10,2.49,0.08,0.05,184,4,2.17,218,6,2.75,18,f
+NAICS Sector,Management of Companies and Enterprises,312,2,0.64,0.07,0.01,93,1,1.08,219,1,0.46,19,f
+NAICS Sector,Public Administration,81,7,8.64,0.02,0.04,37,4,10.81,44,3,6.82,20,f
+NAICS Sector,Unknown / Unmapped,2,2,100.00,0.00,0.01,2,2,100.00,0,0,,21,f
