@@ -8,6 +8,10 @@ I built an end-to-end portfolio analytics project using U.S. Small Business Admi
 |---:|---:|---:|---:|
 | **478,953 loans** | **45,670 loans** | **22.28%** | **2.23×** |
 
+
+**Quick navigation:** [Key Findings](#-key-findings) · [Excel Simulator](#-interactive-excel-simulator) · [Modeling & Validation](#-modeling-and-validation) · [Technical Documentation](docs/SBA_technical_methods_and_reproducibility.md)
+
+
 ## 📊 Project overview
 
 **Business question:** Given limited review resources, can a historical loan-risk ranking identify a larger share of recorded charge-offs than reviewing loans at random? Which portfolio segments warrant closer analytical attention?
@@ -73,8 +77,6 @@ The full population and both time bands reconcile independently for **each** dim
 ![Bar chart of five-year charge-off incidence across SBA approval fiscal years 2010 through 2019](assets/vintage_chargeoff_rates.png)
 
 I calculated the fiscal-year loan counts and five-year charge-off rates using PostgreSQL, then built this visualization in Excel. The source data, formulas, and editable chart are available in the [SBA Vintage Analysis workbook](excel/SBA_Vintage_Analysis.xlsx).
-
-*Source: FY2010–FY2019 loan counts and charge-offs from the 478,953-row modeling population. These are retrospective observed-label rates, not forward-looking default forecasts.*
 
 ## 💡 Recommendation and business use
 
