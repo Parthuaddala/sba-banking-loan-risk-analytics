@@ -162,6 +162,6 @@ I documented the outcome-definition reconciliation and the feature/audit analysi
 For exact target logic, event-boundary reconciliation, field definitions, interest-rate substitution sensitivity, and detailed SQL import instructions, see **[Technical methods and reproducibility](docs/SBA_technical_methods_and_reproducibility.md)**.
 
 ---
-
 **Created by Parthasarathi Addala**
+
 [GitHub: Parthuaddala](https://github.com/Parthuaddala)
