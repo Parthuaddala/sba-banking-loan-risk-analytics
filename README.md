@@ -1,6 +1,6 @@
 # 🏦 SBA 7(a) Banking Loan Risk & Portfolio Analytics
 
-**PostgreSQL · Python · scikit-learn · Excel for Mac · Retrospective credit-risk ranking**
+**PostgreSQL · Python · scikit-learn · Excel · Retrospective credit-risk ranking**
 
 **A documented portfolio-analysis case study with historical risk ranking, careful model comparison, and a completed Excel decision-support simulator.**
 
@@ -8,7 +8,7 @@
 |---:|---:|---:|---:|
 | **478,953 loans** | **22.28%** | **0.7020** | **398 of 1,786** |
 
-**Explore:** [Overview](#-project-overview) · [SQL pipeline](#️-postgresql-pipeline-and-sql-work) · [Model selection](#️-model-selection-and-uncertainty) · [Holdout results](#-final-fy2019-holdout-frozen-model) · [Excel simulator](#-excel-risk-review-simulator-completed) · [Repository / setup](#-repository-structure-and-reproducibility) · [Limitations](#️-limitations-and-responsible-use)
+**Explore:** [Overview](#-project-overview) · [SQL pipeline](#️-postgresql-pipeline-and-sql-work) · [Model selection](#️-model-selection-and-uncertainty) · [Holdout results](#-final-fy2019-holdout-frozen-model) · [Excel simulator](#-excel-risk-review-simulator) · [Repository / setup](#-repository-structure-and-reproducibility) · [Limitations](#️-limitations-and-responsible-use)
 
 ### 🖼️ Excel simulator previews
 
@@ -17,6 +17,13 @@
 ![Actual Excel risk-review simulator dashboard showing FY2019 loan-review KPIs and financial what-if inputs](assets/sba_dashboard.png)
 
 *At the selected 10% review capacity, 4,567 historical loans are reviewed and 398 recorded five-year charge-offs fall in this group. The financial what-if is illustrative, not demonstrated savings.*
+
+### 📈 Historical Capture Curve
+
+The chart compares the share of historical charge-offs captured by model-ranked reviews against random selection. The green marker shows the selected review capacity.
+
+![Model vs Random Review Capture Curve](assets/capture_curve.png)
+
 
 **Risk deciles — FY2018 validation versus FY2019 holdout**
 
@@ -43,7 +50,7 @@ This project analyzes U.S. Small Business Administration (SBA) 7(a) FOIA loan-le
 | Modeling | scikit-learn | Logistic Regression baseline, Histogram Gradient Boosting challenger, sigmoid calibration |
 | Validation | Python | Chronological splits, Average Precision, Recall@10%, Brier score, deciles, bootstrap comparisons |
 | Reporting | Markdown and CSV | Methodology, frozen decision record, validation exports and exploratory diagnostics |
-| Decision support | Excel for Mac | Completed FY2018/FY2019 risk-review simulator, capacity comparison, deciles, historical-dollar capture, and hypothetical review economics |
+| Decision support | Excel | Completed FY2018/FY2019 risk-review simulator, capacity comparison, deciles, historical-dollar capture, and hypothetical review economics |
 
 ## 🗃️ Dataset and population
 
@@ -319,9 +326,8 @@ The following is the **intended published structure** after the final `.gitignor
 ├── .gitignore
 ├── assets/                             # Actual Excel simulator screenshots
 │   ├── sba_dashboard.png
+│   ├── capture_curve.png
 │   └── sba_risk_deciles.png
-├── data/
-│   └── README.md                         # Dataset source and local export instructions
 ├── sql/
 │   ├── 00_create_schemas.sql
 │   ├── 01_raw_database_setup.sql
@@ -353,7 +359,7 @@ The following is the **intended published structure** after the final `.gitignor
     └── model_evaluation_summary.md
 ```
 
-Other retained model `.joblib` artifacts may be present locally; their inclusion depends on the final file-size and version audit. `data/raw/` and `data/exports/` hold local files, not files guaranteed to be present in the published repository. The intended `data/README.md` should be created and reviewed before publication.
+Other retained model `.joblib` artifacts may be present locally; their inclusion depends on the final file-size and version audit. `data/raw/` and `data/exports/` hold local files, not files guaranteed to be present in the published repository. Dataset acquisition and local export instructions are described in this README.
 
 **Suggested reproduction order:**
 
@@ -380,9 +386,9 @@ Other retained model `.joblib` artifacts may be present locally; their inclusion
 
 ## ✅ Project status / next steps
 
-**Completed:** SQL ingest and analytical views; modeling export; validation; Logistic Regression baseline; Gradient Boosting challenger; term-leakage investigation; probability calibration; FY2018 selection; FY2019 frozen evaluation; feature-integrity and drift diagnostics; **five-sheet Excel risk-review simulator tested on Excel for Mac**; preliminary notebook and SQL documentation reviews; Python dependency verification.
+**Completed:** SQL ingest and analytical views; modeling export; validation; Logistic Regression baseline; Gradient Boosting challenger; term-leakage investigation; probability calibration; FY2018 selection; FY2019 frozen evaluation; feature-integrity and drift diagnostics; **five-sheet Excel risk-review simulator**; preliminary notebook and SQL documentation reviews; Python dependency verification.
 
-**Before GitHub publication:** (1) verify `.gitignore` and tracked-file size checks; (2) create/verify `data/README.md` and the exact raw-data acquisition/import instructions; (3) check that notebook links and relative paths still match the final layout; (4) optionally test the pipeline against a fresh PostgreSQL/Python installation. The project is not represented as fully reproduced end-to-end on a clean system.
+**Before GitHub publication:** (1) verify `.gitignore` and tracked-file size checks; (2) verify the exact raw-data acquisition/import instructions; (3) check that notebook links and relative paths still match the final layout; (4) optionally test the pipeline against a fresh PostgreSQL/Python installation. The project is not represented as fully reproduced end-to-end on a clean system.
 
 ---
 
