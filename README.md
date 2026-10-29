@@ -28,6 +28,8 @@ The dataset covers **FY2010–FY2019 approvals** in the SBA 7(a) FOIA release **
 
 **4. A suspiciously strong predictor changed the modeling approach.** Early models using reported loan term achieved unusually strong discrimination, and nonstandard terms showed abnormal event patterns. Because term values might reflect post-approval changes, I excluded both term-related predictors before the final comparison. **Leakage was suspected, not conclusively proven**; the underlying field-history mechanism has not been established.
 
+**5. Observed charge-off rates vary across portfolio segments and fiscal-year cohorts.** Across 478,953 eligible loans, SBA Express recorded a 4.19% five-year charge-off rate versus 3.04% for Preferred Lenders. Transportation and Warehousing recorded 5.63% versus 2.29% for Health Care, while Florida recorded 5.81% versus 2.47% for Washington. Overall incidence increased from 3.68% in FY2010–2014 to 4.13% in FY2015–2019. These differences may reflect changes in loan size, processing method, industry, geography, and approval vintage rather than independent segment effects. They also reinforce the need to monitor portfolio drift and model calibration.
+
 ### Portfolio segmentation — all FY2010–FY2019 eligible loans
 
 I used PostgreSQL to compare processing methods, industry sectors and project states across **all 478,953 eligible loans** (18,826 recorded events). My analysis reports each segment’s event incidence, share of total loans, share of total recorded charge-offs, and early (**FY2010–2014**) versus late (**FY2015–2019**) event rates. The results describe a retrospective status-selected population, not prospective credit risk.
@@ -44,6 +46,8 @@ I used PostgreSQL to compare processing methods, industry sectors and project st
 | Small Loan Advantage Initiative | 27,648 | 1,396 | 5.05% | 5.77% | 7.42% | 4.79% | 5.22% |
 | Patriot Express Loans | 5,553 | 504 | 9.08% | 1.16% | 2.68% | 9.08% | N/A |
 | Community Express *(highest qualifying rate)* | 5,123 | 796 | 15.54% | 1.07% | 4.23% | 15.54% | N/A |
+
+*Patriot Express and Community Express have loans only in FY2010–2014 within this dataset. Their FY2015–2019 rates are therefore N/A, not zero. Their historical charge-off rates should not be interpreted as evidence of current program performance.*
 
 **NAICS industry sector** — [all 21 categories](results/portfolio_naics_sectors.csv)
 
@@ -75,6 +79,8 @@ The full population and both time bands reconcile independently for **each** dim
 ### Charge-off incidence by approval vintage
 
 ![Bar chart of five-year charge-off incidence across SBA approval fiscal years 2010 through 2019](assets/vintage_chargeoff_rates.png)
+
+*Rates represent retrospective five-year charge-off incidence among 478,953 eligible loans, not forward-looking default forecasts.*
 
 I calculated the fiscal-year loan counts and five-year charge-off rates using PostgreSQL, then built this visualization in Excel. The source data, formulas, and editable chart are available in the [SBA Vintage Analysis workbook](excel/SBA_Vintage_Analysis.xlsx).
 
@@ -151,7 +157,7 @@ I documented the outcome-definition reconciliation and the feature/audit analysi
 5. For descriptive portfolio analysis, run `sql/05_portfolio_segment_analysis.sql` in pgAdmin, then regenerate the three published aggregated CSVs with `sql/06_export_portfolio_segments_psql.sql` in `psql` from the repository root (see [SQL execution notes](sql/README_SQL.md)).
 6. Verify FY2019 results against the repository's `results/` and `models/model_selection_record.json`. Keep the original published model and result files backed up before rerunning notebooks that overwrite artifacts.
 
-**Reproducibility:** I reran the SQL and Python pipeline using a fresh clone, separate PostgreSQL database, and isolated Python 3.12.8 environment, reproducing the final Logistic Regression results and FY2018 model-selection decision. Gradient Boosting showed small numerical differences, and the test does not prove byte-identical refitting of the saved final estimator; the published Excel file was also tested on Excel for Mac.
+**Reproducibility:** I reran the SQL and Python pipeline using a fresh clone, separate PostgreSQL database, and isolated Python 3.12.8 environment, reproducing the final Logistic Regression results and FY2018 model-selection decision. I also independently reran the portfolio-segmentation and CSV export scripts against the separate database; all three regenerated reports matched the published CSVs byte-for-byte. Gradient Boosting showed small numerical differences, and the test does not establish byte-identical refitting of the saved final estimator. The published Excel simulator was also tested in Excel for Mac.
 
 ## ⚠️ Limitations and responsible use
 
